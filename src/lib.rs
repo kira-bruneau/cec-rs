@@ -1195,28 +1195,27 @@ pub enum CecConnectionResultError {
 }
 
 pub struct CecConnection(
-    pub CecConnectionCfg,
     libcec_connection_t,
     #[allow(dead_code)] Pin<Box<CecCallbacks>>,
 );
 
 impl CecConnection {
     pub fn transmit(&self, command: CecCommand) -> CecConnectionResult<()> {
-        if unsafe { libcec_transmit(self.1, &command.into()) } == 0 {
+        if unsafe { libcec_transmit(self.0, &command.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
         }
     }
     pub fn send_power_on_devices(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
-        if unsafe { libcec_power_on_devices(self.1, address.into()) } == 0 {
+        if unsafe { libcec_power_on_devices(self.0, address.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
         }
     }
     pub fn send_standby_devices(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
-        if unsafe { libcec_standby_devices(self.1, address.into()) } == 0 {
+        if unsafe { libcec_standby_devices(self.0, address.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1224,7 +1223,7 @@ impl CecConnection {
     }
 
     pub fn set_active_source(&self, device_type: CecDeviceType) -> CecConnectionResult<()> {
-        if unsafe { libcec_set_active_source(self.1, device_type.into()) } == 0 {
+        if unsafe { libcec_set_active_source(self.0, device_type.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1232,7 +1231,7 @@ impl CecConnection {
     }
 
     pub fn get_active_source(&self) -> CecLogicalAddress {
-        let active_raw: cec_logical_address = unsafe { libcec_get_active_source(self.1) };
+        let active_raw: cec_logical_address = unsafe { libcec_get_active_source(self.0) };
         match CecLogicalAddress::try_from(active_raw) {
             Ok(address) => address,
             Err(active_raw) => {
@@ -1243,12 +1242,12 @@ impl CecConnection {
     }
 
     pub fn is_active_source(&self, address: CecLogicalAddress) -> bool {
-        (unsafe { libcec_is_active_source(self.1, address.into()) }) != 0
+        (unsafe { libcec_is_active_source(self.0, address.into()) }) != 0
     }
 
     pub fn get_device_power_status(&self, address: CecLogicalAddress) -> CecPowerStatus {
         let status_raw: cec_power_status =
-            unsafe { libcec_get_device_power_status(self.1, address.into()) };
+            unsafe { libcec_get_device_power_status(self.0, address.into()) };
         match CecPowerStatus::try_from(status_raw) {
             Ok(status) => status,
             Err(status_raw) => {
@@ -1264,7 +1263,7 @@ impl CecConnection {
         key: CecUserControlCode,
         wait: bool,
     ) -> CecConnectionResult<()> {
-        if unsafe { libcec_send_keypress(self.1, address.into(), key.into(), wait.into()) } == 0 {
+        if unsafe { libcec_send_keypress(self.0, address.into(), key.into(), wait.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1276,7 +1275,7 @@ impl CecConnection {
         address: CecLogicalAddress,
         wait: bool,
     ) -> CecConnectionResult<()> {
-        if unsafe { libcec_send_key_release(self.1, address.into(), wait.into()) } == 0 {
+        if unsafe { libcec_send_key_release(self.0, address.into(), wait.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1284,35 +1283,35 @@ impl CecConnection {
     }
 
     pub fn volume_up(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_volume_up(self.1, send_release.into()) } as u8)
+        KnownCecAudioStatus::try_from(unsafe { libcec_volume_up(self.0, send_release.into()) } as u8)
     }
 
     pub fn volume_down(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_volume_down(self.1, send_release.into()) } as u8)
+        KnownCecAudioStatus::try_from(unsafe { libcec_volume_down(self.0, send_release.into()) } as u8)
     }
 
     pub fn mute_audio(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_mute_audio(self.1, send_release.into()) } as u8)
+        KnownCecAudioStatus::try_from(unsafe { libcec_mute_audio(self.0, send_release.into()) } as u8)
     }
 
     pub fn audio_toggle_mute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_audio_toggle_mute(self.1) })
+        KnownCecAudioStatus::try_from(unsafe { libcec_audio_toggle_mute(self.0) })
     }
 
     pub fn audio_mute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_audio_mute(self.1) })
+        KnownCecAudioStatus::try_from(unsafe { libcec_audio_mute(self.0) })
     }
 
     pub fn audio_unmute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_audio_unmute(self.1) })
+        KnownCecAudioStatus::try_from(unsafe { libcec_audio_unmute(self.0) })
     }
 
     pub fn audio_get_status(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
-        KnownCecAudioStatus::try_from(unsafe { libcec_audio_get_status(self.1) })
+        KnownCecAudioStatus::try_from(unsafe { libcec_audio_get_status(self.0) })
     }
 
     pub fn set_inactive_view(&self) -> CecConnectionResult<()> {
-        if unsafe { libcec_set_inactive_view(self.1) } == 0 {
+        if unsafe { libcec_set_inactive_view(self.0) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1320,7 +1319,7 @@ impl CecConnection {
     }
 
     pub fn set_logical_address(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
-        if unsafe { libcec_set_logical_address(self.1, address.into()) } == 0 {
+        if unsafe { libcec_set_logical_address(self.0, address.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1328,7 +1327,7 @@ impl CecConnection {
     }
 
     pub fn switch_monitoring(&self, enable: bool) -> CecConnectionResult<()> {
-        if unsafe { libcec_switch_monitoring(self.1, enable.into()) } == 0 {
+        if unsafe { libcec_switch_monitoring(self.0, enable.into()) } == 0 {
             Err(CecConnectionResultError::TransmitFailed)
         } else {
             Ok(())
@@ -1338,7 +1337,7 @@ impl CecConnection {
     pub fn get_logical_addresses(
         &self,
     ) -> Result<CecLogicalAddresses, TryFromCecLogicalAddressesError> {
-        CecLogicalAddresses::try_from(unsafe { libcec_get_logical_addresses(self.1) })
+        CecLogicalAddresses::try_from(unsafe { libcec_get_logical_addresses(self.0) })
     }
 
     // Unimplemented:
@@ -1383,28 +1382,24 @@ impl CecConnectionCfg {
     /// - LibInitFailed: libcec_sys::libcec_initialise fails
     /// - AdapterOpenFailed: libcec_sys::libcec_open fails
     /// - CallbackRegistrationFailed: libcec_sys::libcec_enable_callbacks fails
-    pub fn open(mut self) -> CecConnectionResult<CecConnection> {
+    pub fn open(self) -> CecConnectionResult<CecConnection> {
         let mut cfg: libcec_configuration = (&self).into();
         // Consume self.*_callback and build CecCallbacks from those
         let pinned_callbacks = Box::pin(CecCallbacks {
-            key_press_callback: self.key_press_callback.take(),
-            command_received_callback: self.command_received_callback.take(),
-            log_message_callbacks: self.log_message_callback.take(),
+            key_press_callback: self.key_press_callback,
+            command_received_callback: self.command_received_callback,
+            log_message_callbacks: self.log_message_callback,
         });
         let rust_callbacks_as_void_ptr = &*pinned_callbacks as *const _ as *mut _;
-        let connection = CecConnection(
-            self,
-            unsafe { libcec_initialise(&mut cfg) },
-            pinned_callbacks,
-        );
-        if connection.1 as usize == 0 {
+        let connection = CecConnection(unsafe { libcec_initialise(&mut cfg) }, pinned_callbacks);
+        if connection.0 as usize == 0 {
             return Err(CecConnectionResultError::LibInitFailed);
         }
 
-        let open_timeout = connection.0.open_timeout.as_millis() as u32;
-        match &connection.0.port {
+        let open_timeout = self.open_timeout.as_millis() as u32;
+        match self.port {
             Some(port) => {
-                if unsafe { libcec_open(connection.1, port.as_ptr(), open_timeout) } == 0 {
+                if unsafe { libcec_open(connection.0, port.as_ptr(), open_timeout) } == 0 {
                     return Err(CecConnectionResultError::AdapterOpenFailed);
                 }
             }
@@ -1412,7 +1407,7 @@ impl CecConnectionCfg {
                 let mut adapters = MaybeUninit::<[libcec_sys::cec_adapter_descriptor; 1]>::uninit();
                 let num_adapters = unsafe {
                     libcec_sys::libcec_detect_adapters(
-                        connection.1,
+                        connection.0,
                         adapters.as_mut_ptr() as *mut _,
                         1,
                         std::ptr::null(),
@@ -1425,7 +1420,7 @@ impl CecConnectionCfg {
                 }
 
                 let port = unsafe { adapters.assume_init() }[0].strComName;
-                if unsafe { libcec_open(connection.1, port.as_ptr(), open_timeout) == 0 } {
+                if unsafe { libcec_open(connection.0, port.as_ptr(), open_timeout) } == 0 {
                     return Err(CecConnectionResultError::AdapterOpenFailed);
                 }
             }
@@ -1434,7 +1429,7 @@ impl CecConnectionCfg {
         #[cfg(abi4)]
         let callback_ret = unsafe {
             libcec_sys::libcec_enable_callbacks(
-                connection.1,
+                connection.0,
                 rust_callbacks_as_void_ptr,
                 addr_of_mut!(CALLBACKS),
             )
@@ -1442,7 +1437,7 @@ impl CecConnectionCfg {
         #[cfg(not(abi4))]
         let callback_ret = unsafe {
             libcec_sys::libcec_set_callbacks(
-                connection.1,
+                connection.0,
                 addr_of_mut!(CALLBACKS),
                 rust_callbacks_as_void_ptr,
             )
@@ -1462,7 +1457,7 @@ unsafe impl Sync for CecConnection {}
 impl Drop for CecConnection {
     fn drop(&mut self) {
         unsafe {
-            libcec_destroy(self.1);
+            libcec_destroy(self.0);
         }
     }
 }
