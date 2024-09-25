@@ -1478,6 +1478,9 @@ impl CecConnectionCfg {
     }
 }
 
+unsafe impl Send for CecConnection {}
+unsafe impl Sync for CecConnection {}
+
 impl Drop for CecConnection {
     fn drop(&mut self) {
         unsafe {
