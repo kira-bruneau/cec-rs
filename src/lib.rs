@@ -162,13 +162,13 @@ impl KnownCecAudioStatus {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TryFromCecAudioStatusError {
+pub enum CecAudioStatusError {
     Reserved(u8),
     Unknown,
 }
 
 impl TryFrom<u8> for KnownCecAudioStatus {
-    type Error = TryFromCecAudioStatusError;
+    type Error = CecAudioStatusError;
 
     fn try_from(status: u8) -> Result<Self, Self::Error> {
         let volume = status & (libcec_sys::CEC_AUDIO_VOLUME_STATUS_MASK as u8);
@@ -239,7 +239,7 @@ mod audiostatus_tests {
     pub fn test_reserved_volume() {
         let raw = libcec_sys::CEC_AUDIO_VOLUME_MAX as u8 + 3;
         let status = KnownCecAudioStatus::try_from(raw);
-        assert_eq!(status, Err(TryFromCecAudioStatusError::Reserved(2)));
+        assert_eq!(status, Err(CecAudioStatusError::Reserved(2)));
 
         let status = KnownCecAudioStatus::new(raw, false);
         assert_eq!(u8::from(status), 100);
@@ -249,7 +249,7 @@ mod audiostatus_tests {
     pub fn test_unknown_volume() {
         let raw = libcec_sys::CEC_AUDIO_VOLUME_STATUS_UNKNOWN as u8;
         let status = KnownCecAudioStatus::try_from(raw);
-        assert_eq!(status, Err(TryFromCecAudioStatusError::Unknown));
+        assert_eq!(status, Err(CecAudioStatusError::Unknown));
 
         let status = KnownCecAudioStatus::new(raw, false);
         assert_eq!(u8::from(status), 100);
@@ -459,22 +459,22 @@ impl From<CecCommand> for cec_command {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TryFromCecCommandError {
+pub enum CecCommandError {
     UnknownOpcode,
     UnknownInitiator,
     UnknownDestination,
 }
 
 impl core::convert::TryFrom<cec_command> for CecCommand {
-    type Error = TryFromCecCommandError;
+    type Error = CecCommandError;
 
     fn try_from(command: cec_command) -> std::result::Result<Self, Self::Error> {
         let opcode = CecOpcode::try_from(command.opcode)
-            .map_err(|_| TryFromCecCommandError::UnknownOpcode)?;
+            .map_err(|_| CecCommandError::UnknownOpcode)?;
         let initiator = CecLogicalAddress::try_from(command.initiator)
-            .map_err(|_| TryFromCecCommandError::UnknownInitiator)?;
+            .map_err(|_| CecCommandError::UnknownInitiator)?;
         let destination = CecLogicalAddress::try_from(command.destination)
-            .map_err(|_| TryFromCecCommandError::UnknownDestination)?;
+            .map_err(|_| CecCommandError::UnknownDestination)?;
         let parameters = command.parameters.into();
         let transmit_timeout = Duration::from_millis(if command.transmit_timeout < 0 {
             0
@@ -589,7 +589,7 @@ mod command_tests {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TryFromCecLogMessageError {
+pub enum CecLogMessageError {
     MessageParseError,
     LogLevelParseError,
     TimestampParseError,
@@ -607,20 +607,20 @@ pub struct CecLogMessage {
 }
 
 impl core::convert::TryFrom<cec_log_message> for CecLogMessage {
-    type Error = TryFromCecLogMessageError;
+    type Error = CecLogMessageError;
 
     fn try_from(log_message: cec_log_message) -> std::result::Result<Self, Self::Error> {
         let c_str: &CStr = unsafe { CStr::from_ptr(log_message.message) };
         let message = c_str
             .to_str()
-            .map_err(|_| TryFromCecLogMessageError::MessageParseError)?
+            .map_err(|_| CecLogMessageError::MessageParseError)?
             .to_owned();
         let level = CecLogLevel::try_from(log_message.level)
-            .map_err(|_| TryFromCecLogMessageError::LogLevelParseError)?;
+            .map_err(|_| CecLogMessageError::LogLevelParseError)?;
         let time = log_message
             .time
             .try_into()
-            .map_err(|_| TryFromCecLogMessageError::TimestampParseError)?;
+            .map_err(|_| CecLogMessageError::TimestampParseError)?;
 
         Ok(CecLogMessage {
             message,
@@ -694,18 +694,18 @@ impl CecLogicalAddresses {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TryFromCecLogicalAddressesError {
+pub enum CecLogicalAddressesError {
     UnknownPrimaryAddress,
     InvalidPrimaryAddress,
 }
 
 impl TryFrom<cec_logical_addresses> for CecLogicalAddresses {
-    type Error = TryFromCecLogicalAddressesError;
+    type Error = CecLogicalAddressesError;
     fn try_from(addresses: cec_logical_addresses) -> Result<Self, Self::Error> {
         let primary = CecLogicalAddress::try_from(addresses.primary)
-            .map_err(|_| TryFromCecLogicalAddressesError::InvalidPrimaryAddress)?;
+            .map_err(|_| CecLogicalAddressesError::InvalidPrimaryAddress)?;
         let primary = KnownCecLogicalAddress::new(primary)
-            .ok_or(TryFromCecLogicalAddressesError::UnknownPrimaryAddress)?;
+            .ok_or(CecLogicalAddressesError::UnknownPrimaryAddress)?;
 
         let addresses = HashSet::from_iter(addresses.addresses.into_iter().enumerate().filter_map(
             |(logical_addr, addr_mask)| {
@@ -915,15 +915,15 @@ pub struct CecKeypress {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TryFromCecKeyPressError {
+pub enum CecKeyPressError {
     UnknownKeycode,
 }
 
 impl core::convert::TryFrom<cec_keypress> for CecKeypress {
-    type Error = TryFromCecKeyPressError;
+    type Error = CecKeyPressError;
     fn try_from(keypress: cec_keypress) -> std::result::Result<Self, Self::Error> {
         let keycode = CecUserControlCode::try_from(keypress.keycode)
-            .map_err(|_| TryFromCecKeyPressError::UnknownKeycode)?;
+            .map_err(|_| CecKeyPressError::UnknownKeycode)?;
         Ok(CecKeypress {
             keycode,
             duration: Duration::from_millis(keypress.duration.into()),
@@ -951,12 +951,12 @@ mod keypress_tests {
 
     #[test]
     fn test_keypress_from_ffi_unknown_code() {
-        let keypress: Result<CecKeypress, TryFromCecKeyPressError> = cec_keypress {
+        let keypress: Result<CecKeypress, CecKeyPressError> = cec_keypress {
             keycode: 666,
             duration: 300,
         }
         .try_into();
-        assert_eq!(keypress, Err(TryFromCecKeyPressError::UnknownKeycode));
+        assert_eq!(keypress, Err(CecKeyPressError::UnknownKeycode));
     }
 }
 
@@ -1284,31 +1284,31 @@ impl CecConnection {
         }
     }
 
-    pub fn volume_up(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn volume_up(&self, send_release: bool) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_volume_up(self.1, send_release.into()) } as u8)
     }
 
-    pub fn volume_down(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn volume_down(&self, send_release: bool) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_volume_down(self.1, send_release.into()) } as u8)
     }
 
-    pub fn mute_audio(&self, send_release: bool) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn mute_audio(&self, send_release: bool) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_mute_audio(self.1, send_release.into()) } as u8)
     }
 
-    pub fn audio_toggle_mute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn audio_toggle_mute(&self) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_audio_toggle_mute(self.1) })
     }
 
-    pub fn audio_mute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn audio_mute(&self) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_audio_mute(self.1) })
     }
 
-    pub fn audio_unmute(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn audio_unmute(&self) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_audio_unmute(self.1) })
     }
 
-    pub fn audio_get_status(&self) -> Result<KnownCecAudioStatus, TryFromCecAudioStatusError> {
+    pub fn audio_get_status(&self) -> Result<KnownCecAudioStatus, CecAudioStatusError> {
         KnownCecAudioStatus::try_from(unsafe { libcec_audio_get_status(self.1) })
     }
 
@@ -1330,7 +1330,7 @@ impl CecConnection {
 
     pub fn get_logical_addresses(
         &self,
-    ) -> Result<CecLogicalAddresses, TryFromCecLogicalAddressesError> {
+    ) -> Result<CecLogicalAddresses, CecLogicalAddressesError> {
         CecLogicalAddresses::try_from(unsafe { libcec_get_logical_addresses(self.1) })
     }
 
