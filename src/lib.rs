@@ -1184,10 +1184,10 @@ pub struct CecConnectionCfg {
     pub autowake_avr: Option<bool>,
 }
 
-pub type CecConnectionResult<T> = result::Result<T, CecConnectionResultError>;
+pub type CecConnectionResult<T> = result::Result<T, CecConnectionError>;
 
 #[derive(Debug)]
-pub enum CecConnectionResultError {
+pub enum CecConnectionError {
     LibInitFailed,
     NoAdapterFound,
     AdapterOpenFailed,
@@ -1204,21 +1204,21 @@ pub struct CecConnection(
 impl CecConnection {
     pub fn transmit(&self, command: CecCommand) -> CecConnectionResult<()> {
         if unsafe { libcec_transmit(self.1, &command.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
     }
     pub fn send_power_on_devices(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
         if unsafe { libcec_power_on_devices(self.1, address.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
     }
     pub fn send_standby_devices(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
         if unsafe { libcec_standby_devices(self.1, address.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1226,7 +1226,7 @@ impl CecConnection {
 
     pub fn set_active_source(&self, device_type: CecDeviceType) -> CecConnectionResult<()> {
         if unsafe { libcec_set_active_source(self.1, device_type.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1266,7 +1266,7 @@ impl CecConnection {
         wait: bool,
     ) -> CecConnectionResult<()> {
         if unsafe { libcec_send_keypress(self.1, address.into(), key.into(), wait.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1278,7 +1278,7 @@ impl CecConnection {
         wait: bool,
     ) -> CecConnectionResult<()> {
         if unsafe { libcec_send_key_release(self.1, address.into(), wait.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1314,7 +1314,7 @@ impl CecConnection {
 
     pub fn set_inactive_view(&self) -> CecConnectionResult<()> {
         if unsafe { libcec_set_inactive_view(self.1) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1322,7 +1322,7 @@ impl CecConnection {
 
     pub fn set_logical_address(&self, address: CecLogicalAddress) -> CecConnectionResult<()> {
         if unsafe { libcec_set_logical_address(self.1, address.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1336,7 +1336,7 @@ impl CecConnection {
 
     pub fn switch_monitoring(&self, enable: bool) -> CecConnectionResult<()> {
         if unsafe { libcec_switch_monitoring(self.1, enable.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1344,7 +1344,7 @@ impl CecConnection {
 
     pub fn set_deck_control_mode(&self, mode: CecDeckControlMode, send_update: bool) -> CecConnectionResult<()> {
         if unsafe { libcec_set_deck_control_mode(self.1, mode.into(), send_update.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1352,7 +1352,7 @@ impl CecConnection {
 
     pub fn set_deck_info(&self, info: CecDeckInfo, send_update: bool) -> CecConnectionResult<()> {
         if unsafe { libcec_set_deck_info(self.1, info.into(), send_update.into()) } == 0 {
-            Err(CecConnectionResultError::TransmitFailed)
+            Err(CecConnectionError::TransmitFailed)
         } else {
             Ok(())
         }
@@ -1413,14 +1413,14 @@ impl CecConnectionCfg {
             pinned_callbacks,
         );
         if connection.1 as usize == 0 {
-            return Err(CecConnectionResultError::LibInitFailed);
+            return Err(CecConnectionError::LibInitFailed);
         }
 
         let open_timeout = connection.0.open_timeout.as_millis() as u32;
         match &connection.0.port {
             Some(port) => {
                 if unsafe { libcec_open(connection.1, port.as_ptr(), open_timeout) } == 0 {
-                    return Err(CecConnectionResultError::AdapterOpenFailed);
+                    return Err(CecConnectionError::AdapterOpenFailed);
                 }
             }
             None => {
@@ -1436,12 +1436,12 @@ impl CecConnectionCfg {
                 };
 
                 if num_adapters == 0 {
-                    return Err(CecConnectionResultError::NoAdapterFound);
+                    return Err(CecConnectionError::NoAdapterFound);
                 }
 
                 let port = unsafe { adapters.assume_init() }[0].strComName;
                 if unsafe { libcec_open(connection.1, port.as_ptr(), open_timeout) == 0 } {
-                    return Err(CecConnectionResultError::AdapterOpenFailed);
+                    return Err(CecConnectionError::AdapterOpenFailed);
                 }
             }
         };
@@ -1463,7 +1463,7 @@ impl CecConnectionCfg {
             )
         };
         if callback_ret == 0 {
-            return Err(CecConnectionResultError::CallbackRegistrationFailed);
+            return Err(CecConnectionError::CallbackRegistrationFailed);
         }
 
         Ok(connection)
